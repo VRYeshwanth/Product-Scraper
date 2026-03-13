@@ -72,7 +72,7 @@ def scrape_amazon_selenium(search_query, pages=5):
                     })
                 except Exception as e:
                     continue
-            time.sleep(2)
+            time.sleep(4)
     finally:
         driver.quit()
     return product_data
@@ -89,5 +89,14 @@ def save_to_csv(data, filename="amazon_products.csv"):
     print(f"Successfully saved {len(data)} items to '{filename}'.")
 
 if __name__ == "__main__":
-    results = scrape_amazon_selenium("wall clocks", pages=5)
-    save_to_csv(results)
+    product_name = input("Enter the product name : ")
+    try:
+        no_of_pages = int(input("Enter the number of pages to scrape : "))
+        pages = no_of_pages if no_of_pages > 0 else 1
+    except ValueError:
+        print("Invalid input. Please enter a valid number of pages.")
+        exit()
+    
+
+    results = scrape_amazon_selenium(product_name, pages=pages)
+    save_to_csv(results, filename=f"{product_name}_amazon_products.csv")
