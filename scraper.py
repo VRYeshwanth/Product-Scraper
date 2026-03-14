@@ -44,10 +44,10 @@ def scrape_amazon_selenium(search_query, pages=5):
                     (By.CSS_SELECTOR, 'div[data-component-type="s-search-result"]')
                 )
             )
-
+            time.sleep(3)
             # Scroll to load lazy products
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(2)
+            time.sleep(3)
 
             products = driver.find_elements(
                 By.CSS_SELECTOR,
@@ -79,7 +79,11 @@ def scrape_amazon_selenium(search_query, pages=5):
 
                     # Rating
                     try:
-                        rating = product.find_element(By.CSS_SELECTOR, "span.a-icon-alt").text
+                        rating_elem = product.find_element(
+                            By.CSS_SELECTOR,
+                            "a[aria-label*='out of 5 stars']"
+                        )
+                        rating = rating_elem.get_attribute("aria-label").split()[0]
                     except:
                         rating = "N/A"
 
