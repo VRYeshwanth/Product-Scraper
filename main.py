@@ -1,9 +1,14 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 import threading
 
-# Import functions from scraper file
 from scraper import scrape_amazon_selenium, save_to_csv
+
+
+def log(message):
+    log_box.insert(tk.END, message + "\n")
+    log_box.see(tk.END)
+    root.update_idletasks()
 
 
 def start_scraping():
@@ -23,73 +28,102 @@ def start_scraping():
         messagebox.showerror("Error", "Pages must be a number")
         return
 
-    status_label.config(text="Scraping started... Please wait")
+    file_path = filedialog.asksaveasfilename(
+        defaultextension=".csv",
+        filetypes=[("CSV files", "*.csv")],
+        title="Save Scraped Data",
+        initialfile=f"{product.replace(' ', '_')}_amazon_products.csv"
+    )
 
-    # Run scraper in separate thread so GUI doesn't freeze
-    threading.Thread(target=run_scraper, args=(product, pages), daemon=True).start()
+    if not file_path:
+        return
+
+    log_box.delete("1.0", tk.END)
+
+    log("Starting scraper...")
+    log(f"Product: {product}")
+    log(f"Pages: {pages}")
+    log("Launching browser...\n")
+
+    threading.Thread(
+        target=run_scraper,
+        args=(product, pages, file_path),
+        daemon=True
+    ).start()
 
 
-def run_scraper(product, pages):
+def run_scraper(product, pages, file_path):
 
     try:
 
-        results = scrape_amazon_selenium(product, pages)
-
-        filename = f"{product.replace(' ', '_')}_amazon_products.csv"
-        save_to_csv(results, filename)
-
-        status_label.config(
-            text=f"Scraping finished! {len(results)} products saved."
+        results = scrape_amazon_selenium(
+            product,
+            pages,
+            log_callback=log
         )
+
+        log("\nSaving data to CSV...")
+        save_to_csv(results, file_path)
+
+        log("File saved successfully.")
+        log(f"Total products: {len(results)}")
+        log("Scraping completed.")
 
     except Exception as e:
 
-        status_label.config(text="Error occurred")
+        log("Error occurred.")
         messagebox.showerror("Error", str(e))
 
 
-# Main window
 root = tk.Tk()
 root.title("Amazon Product Scraper")
-root.geometry("400x250")
+root.geometry("520x420")
 
-# Title
+
 title = tk.Label(
     root,
-    text="Amazon Scraper",
+    text="Amazon Product Scraper",
     font=("Arial", 16, "bold")
 )
 title.pack(pady=10)
 
-# Product input
-product_label = tk.Label(root, text="Product Name")
-product_label.pack()
 
-product_entry = ttk.Entry(root, width=35)
+tk.Label(root, text="Product Name").pack()
+product_entry = ttk.Entry(root, width=40)
 product_entry.pack(pady=5)
 
-# Pages input
-pages_label = tk.Label(root, text="Number of Pages")
-pages_label.pack()
 
+tk.Label(root, text="Number of Pages").pack()
 pages_entry = ttk.Entry(root, width=10)
 pages_entry.insert(0, "3")
 pages_entry.pack(pady=5)
 
-# Start button
-scrape_button = ttk.Button(
+
+ttk.Button(
     root,
     text="Start Scraping",
     command=start_scraping
-)
-scrape_button.pack(pady=15)
+).pack(pady=10)
 
-# Status
-status_label = tk.Label(
+
+tk.Label(root, text="Live Log").pack()
+
+
+log_box = tk.Text(
     root,
-    text="Waiting for input...",
-    fg="blue"
+    height=15,
+    width=65,
+    bg="black",
+    fg="lime",
+    font=("Consolas", 9)
 )
-status_label.pack()
+log_box.pack()
+
+
+scrollbar = ttk.Scrollbar(root, command=log_box.yview)
+scrollbar.pack(side="right", fill="y")
+
+log_box.config(yscrollcommand=scrollbar.set)
+
 
 root.mainloop()

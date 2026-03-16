@@ -10,7 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
-def scrape_amazon_selenium(search_query, pages=5):
+def scrape_amazon_selenium(search_query, pages=5, log_callback=None):
 
     chrome_options = Options()
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
@@ -28,16 +28,24 @@ def scrape_amazon_selenium(search_query, pages=5):
     product_data = []
     seen_asins = set()
 
+    # Logging helper
+    def log(message):
+        if log_callback:
+            log_callback(message)
+        else:
+            print(message)
+
     try:
 
         url = f"https://www.amazon.in/s?k={quote_plus(search_query)}"
+        log(f"Opening Amazon search page for '{search_query}'")
         driver.get(url)
 
         wait = WebDriverWait(driver, 10)
 
         for page in range(pages):
 
-            print(f"Scraping page {page+1}")
+            log(f"\nScraping page {page + 1}")
 
             wait.until(
                 EC.presence_of_element_located(
@@ -45,14 +53,18 @@ def scrape_amazon_selenium(search_query, pages=5):
                 )
             )
             time.sleep(3)
-            # Scroll to load lazy products
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+            # Scroll for lazy loading
+            driver.execute_script(
+                "window.scrollTo(0, document.body.scrollHeight);"
+            )
             time.sleep(3)
 
             products = driver.find_elements(
                 By.CSS_SELECTOR,
                 'div[data-component-type="s-search-result"]'
             )
+            log(f"Products found on page: {len(products)}")
 
             for product in products:
 
@@ -67,13 +79,19 @@ def scrape_amazon_selenium(search_query, pages=5):
 
                     # Title
                     try:
-                        title = product.find_element(By.CSS_SELECTOR, "h2 span").text.strip()
+                        title = product.find_element(
+                            By.CSS_SELECTOR,
+                            "a h2 span"
+                        ).text.strip()
                     except:
                         title = "N/A"
 
                     # Price
                     try:
-                        price = product.find_element(By.CSS_SELECTOR, ".a-price-whole").text.strip()
+                        price = product.find_element(
+                            By.CSS_SELECTOR,
+                            ".a-price-whole"
+                        ).text.strip()
                     except:
                         price = "N/A"
 
@@ -83,13 +101,18 @@ def scrape_amazon_selenium(search_query, pages=5):
                             By.CSS_SELECTOR,
                             "a[aria-label*='out of 5 stars']"
                         )
-                        rating = rating_elem.get_attribute("aria-label").split()[0]
+                        rating = rating_elem.get_attribute(
+                            "aria-label"
+                        ).split()[0]
                     except:
                         rating = "N/A"
 
                     # Product link
                     try:
-                        link = product.find_element(By.CSS_SELECTOR, "h2 a").get_attribute("href")
+                        link = product.find_element(
+                            By.CSS_SELECTOR,
+                            "h2 a"
+                        ).get_attribute("href")
                     except:
                         link = f"https://www.amazon.in/dp/{asin}"
 
@@ -103,51 +126,75 @@ def scrape_amazon_selenium(search_query, pages=5):
                 except:
                     continue
 
+            log(f"Total products collected so far: {len(product_data)}")
             time.sleep(3)
 
-            # Find next button
+            # Pagination
             try:
-
-                next_button = driver.find_element(By.CSS_SELECTOR, ".s-pagination-next")
-
-                # Stop if last page
+                next_button = driver.find_element(
+                    By.CSS_SELECTOR,
+                    ".s-pagination-next"
+                )
                 if "s-pagination-disabled" in next_button.get_attribute("class"):
-                    print("Last page reached.")
+                    log("Last page reached.")
                     break
 
-                driver.execute_script("arguments[0].click();", next_button)
+                log("Moving to next page...")
+                driver.execute_script(
+                    "arguments[0].click();",
+                    next_button
+                )
 
                 time.sleep(3)
 
             except:
-                print("Next button not found.")
+                log("Next button not found.")
                 break
 
     finally:
+        log("Closing browser...")
         driver.quit()
 
     return product_data
 
-def save_to_csv(data, filename="amazon_products.csv"):
+
+def save_to_csv(data, filename="amazon_products.csv", log_callback=None):
+
+    def log(message):
+        if log_callback:
+            log_callback(message)
+        else:
+            print(message)
+
     if not data:
-        print("No product data parsed.")
+        log("No product data parsed.")
         return
+
     keys = data[0].keys()
+
     with open(filename, "w", newline="", encoding="utf-8") as file:
+
         writer = csv.DictWriter(file, fieldnames=keys)
+
         writer.writeheader()
         writer.writerows(data)
-    print(f"Successfully saved {len(data)} items to '{filename}'.")
+
+    log(f"Successfully saved {len(data)} items to '{filename}'.")
+
 
 if __name__ == "__main__":
-    product_name = input("Enter the product name : ")
+    product_name = input("Enter the product name: ")
     try:
-        no_of_pages = int(input("Enter the number of pages to scrape : "))
+        no_of_pages = int(input("Enter the number of pages to scrape: "))
         pages = no_of_pages if no_of_pages > 0 else 1
+
     except ValueError:
         print("Invalid input. Please enter a valid number of pages.")
         exit()
-    
 
     results = scrape_amazon_selenium(product_name, pages=pages)
-    save_to_csv(results, filename=f"{product_name.replace(' ', '_')}_amazon_products.csv")
+
+    save_to_csv(
+        results,
+        filename=f"{product_name.replace(' ', '_')}_amazon_products.csv"
+    )
