@@ -2,6 +2,7 @@
 
 import csv
 import time
+import random
 from urllib.parse import quote_plus
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -12,13 +13,24 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
 def scrape_amazon_selenium(search_query, pages=5, headless=False, log_callback=None):
+    # -------- USER AGENT ROTATION --------
+
+    user_agents = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/119.0 Safari/537.36",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/118.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/121.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/117.0 Safari/537.36"
+    ]
 
     chrome_options = Options()
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
     chrome_options.add_argument(
-        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        f"user-agent={random.choice(user_agents)}"
     )
-    # Headless mode support
+
+    # -------- HEADLESS MODE --------
+
     if headless:
         chrome_options.add_argument("--headless=new")
         chrome_options.add_argument("--window-size=1920,1080")
@@ -30,20 +42,36 @@ def scrape_amazon_selenium(search_query, pages=5, headless=False, log_callback=N
         service=Service(ChromeDriverManager().install()),
         options=chrome_options
     )
-    # Maximize only if not headless
     if not headless:
         driver.maximize_window()
 
     product_data = []
     seen_asins = set()
 
-    # Logging helper
+    # -------- LOG FUNCTION --------
+
     def log(message):
         if log_callback:
             log_callback(message)
         else:
             print(message)
 
+    # -------- RANDOM DELAY FUNCTION --------
+
+    def random_delay():
+        delay = random.uniform(3, 5)
+        time.sleep(delay)
+
+    # -------- RANDOM SCROLL FUNCTION --------
+
+    def random_scroll():
+        scroll_times = random.randint(3, 6)
+        for _ in range(scroll_times):
+            scroll_amount = random.randint(600, 1200)
+            driver.execute_script(
+                f"window.scrollBy(0,{scroll_amount});"
+            )
+            time.sleep(random.uniform(2, 3))
     try:
 
         url = f"https://www.amazon.in/s?k={quote_plus(search_query)}"
@@ -61,13 +89,14 @@ def scrape_amazon_selenium(search_query, pages=5, headless=False, log_callback=N
                     (By.CSS_SELECTOR, 'div[data-component-type="s-search-result"]')
                 )
             )
-            time.sleep(3)
 
-            # Scroll for lazy loading
-            driver.execute_script(
-                "window.scrollTo(0, document.body.scrollHeight);"
-            )
-            time.sleep(3)
+            random_delay()
+
+            # -------- RANDOM SCROLLING --------
+
+            random_scroll()
+
+            random_delay()
 
             products = driver.find_elements(
                 By.CSS_SELECTOR,
@@ -136,9 +165,11 @@ def scrape_amazon_selenium(search_query, pages=5, headless=False, log_callback=N
                     continue
 
             log(f"Total products collected so far: {len(product_data)}")
-            time.sleep(3)
 
-            # Pagination
+            random_delay()
+
+            # -------- PAGINATION --------
+
             try:
                 next_button = driver.find_element(
                     By.CSS_SELECTOR,
@@ -154,7 +185,7 @@ def scrape_amazon_selenium(search_query, pages=5, headless=False, log_callback=N
                     next_button
                 )
 
-                time.sleep(3)
+                random_delay()
 
             except:
                 log("Next button not found.")
