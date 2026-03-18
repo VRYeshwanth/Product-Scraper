@@ -15,6 +15,7 @@ def start_scraping():
 
     product = product_entry.get().strip()
     pages = pages_entry.get().strip()
+    headless = headless_var.get()
 
     if product == "":
         messagebox.showerror("Error", "Please enter a product name")
@@ -43,22 +44,29 @@ def start_scraping():
     log("Starting scraper...")
     log(f"Product: {product}")
     log(f"Pages: {pages}")
+
+    if headless:
+        log("Mode: Headless (no browser window)")
+    else:
+        log("Mode: Normal browser")
+
     log("Launching browser...\n")
 
     threading.Thread(
         target=run_scraper,
-        args=(product, pages, file_path),
+        args=(product, pages, file_path, headless),
         daemon=True
     ).start()
 
 
-def run_scraper(product, pages, file_path):
+def run_scraper(product, pages, file_path, headless):
 
     try:
 
         results = scrape_amazon_selenium(
             product,
             pages,
+            headless=headless,
             log_callback=log
         )
 
@@ -77,7 +85,7 @@ def run_scraper(product, pages, file_path):
 
 root = tk.Tk()
 root.title("Amazon Product Scraper")
-root.geometry("520x420")
+root.geometry("520x440")
 
 
 title = tk.Label(
@@ -99,6 +107,18 @@ pages_entry.insert(0, "3")
 pages_entry.pack(pady=5)
 
 
+# HEADLESS CHECKBOX
+headless_var = tk.BooleanVar()
+
+headless_check = ttk.Checkbutton(
+    root,
+    text="Run in Headless Mode (no browser window)",
+    variable=headless_var
+)
+
+headless_check.pack(pady=5)
+
+
 ttk.Button(
     root,
     text="Start Scraping",
@@ -117,6 +137,7 @@ log_box = tk.Text(
     fg="lime",
     font=("Consolas", 9)
 )
+
 log_box.pack()
 
 

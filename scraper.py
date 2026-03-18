@@ -1,4 +1,5 @@
 # Selenium implementation for scraping Amazon
+
 import csv
 import time
 from urllib.parse import quote_plus
@@ -10,20 +11,28 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
-def scrape_amazon_selenium(search_query, pages=5, log_callback=None):
+def scrape_amazon_selenium(search_query, pages=5, headless=False, log_callback=None):
 
     chrome_options = Options()
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
     chrome_options.add_argument(
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     )
+    # Headless mode support
+    if headless:
+        chrome_options.add_argument("--headless=new")
+        chrome_options.add_argument("--window-size=1920,1080")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
 
     driver = webdriver.Chrome(
         service=Service(ChromeDriverManager().install()),
         options=chrome_options
     )
-
-    driver.maximize_window()
+    # Maximize only if not headless
+    if not headless:
+        driver.maximize_window()
 
     product_data = []
     seen_asins = set()
@@ -192,7 +201,11 @@ if __name__ == "__main__":
         print("Invalid input. Please enter a valid number of pages.")
         exit()
 
-    results = scrape_amazon_selenium(product_name, pages=pages)
+    results = scrape_amazon_selenium(
+        product_name,
+        pages=pages,
+        headless=False
+    )
 
     save_to_csv(
         results,
