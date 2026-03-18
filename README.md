@@ -21,11 +21,43 @@ The scraped data is saved into a **CSV file** for easy analysis.
 
 ---
 
+# Technologies Used
+
+- Python
+- Selenium
+- Tkinter
+- CSV module
+- Chrome WebDriver
+
+---
+
+# GUI Screenshots
+
+Below are some screenshots of the Tkinter interface used in the Amazon Product Scraper.
+
+## Main Window
+
+![Main Window of the GUI](./images/main_window.png)
+
+## Scraping in progress
+
+![Scraping in progress](./images/scraping.png)
+
+# CSV Output
+
+![CSV Output](./images/output.png)
+
+---
+
 # Project Structure
 
 ```
 Directory structure:
 └── Product-Scraper/
+    ├── images/
+    │   ├── main_window.png
+    │   ├── output.png
+    │   └── scraping.png
     ├── main.py
     ├── README.md
     ├── requirements.txt
@@ -34,10 +66,11 @@ Directory structure:
 
 **File descriptions**
 
-- **scraper.py** → Program containing the Selenium scraper
 - **main.py** → Main program containing the Tkinter GUI
+- **scraper.py** → Program containing the Selenium scraper
 - **requirements.txt** → Python libraries required for the project
 - **README.md** → Project documentation
+- **images/** → Screenshots of the GUI
 
 ---
 
